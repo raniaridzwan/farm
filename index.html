@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Farm Animals Adventure</title>
+<style>
+    body {
+        margin: 0;
+        font-family: 'Inter', Arial, sans-serif;
+        background: #e8f8df;
+        color: #23452c;
+        text-align: center;
+    }
+    header {
+        background: #27834c;
+        color: white;
+        padding: 18px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    h1 {
+        margin: 5px;
+    }
+    main {
+        max-width: 1000px;
+        margin: auto;
+        padding: 15px;
+    }
+    canvas {
+        width: 100%;
+        height: 400px;
+        display: block;
+        border-radius: 16px;
+    }
+    #farm {
+        background: linear-gradient(#91d8ff 0%, #91d8ff 48%, #83c957 48%, #83c957 100%);
+        border: 3px solid white;
+        border-radius: 18px;
+        overflow: hidden;
+        position: relative;
+    }
+    #dpad {
+        position: absolute;
+        bottom: 15px;
+        left: 15px;
+        display: grid;
+        grid-template-areas:
+            ". up ."
+            "left down right";
+        gap: 8px;
+        z-index: 10;
+    }
+    .dpad-btn {
+        width: 45px;
+        height: 45px;
+        background: rgba(255, 255, 255, 0.9);
+        border: 2px solid #27834c;
+        border-radius: 12px;
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        user-select: none;
+        touch-action: none;
+        cursor: pointer;
+        color: #27834c;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    .dpad-btn:active {
+        background: #27834c;
+        color: white;
+    }
+    #btn-up { grid-area: up; }
+    #btn-down { grid-area: down; }
+    #btn-left { grid-area: left; }
+    #btn-right { grid-area: right; }
+    .panel {
+        background: white;
+        padding: 18px;
+        border-radius: 16px;
+        margin: 15px 0;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    button {
+        background: #27834c;
+        color: white;
+        border: 0;
+        padding: 12px 16px;
+        margin: 5px;
+        border-radius: 10px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: transform 0.1s, background 0.2s;
+    }
+    button:hover {
+        background: #176638;
+    }
+    button:active {
+        transform: scale(0.95);
+    }
+    #answers button {
+        background: #d9f3ff;
+        color: #23452c;
+        border: 2px solid #83c8e7;
+    }
+    #answers button:hover {
+        background: #bce6ff;
+    }
+    #feedback {
+        font-weight: bold;
+        min-height: 25px;
+        margin: 12px;
+    }
+    #score {
+        font-size: 20px;
+        font-weight: bold;
+        color: #d97706;
+    }
+    progress {
+        width: 90%;
+        height: 20px;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    progress::-webkit-progress-bar {
+        background-color: #eee;
+        border-radius: 10px;
+    }
+    progress::-webkit-progress-value {
+        background-color: #27834c;
+        border-radius: 10px;
+    }
+    input {
+        font-size: 16px;
+        border: 2px solid #ccc;
+    }
+    @media(max-width: 600px) {
+        canvas {
+            height: 300px;
+        }
+        button {
+            font-size: 14px;
+            padding: 10px 12px;
+        }
+    }
+    /* Removed the 768px media query since joystick is now always visible */
+</style>
+</head>
+<body>
+<header>
+    <h1>🐮 Farm Animals Adventure 🐷</h1>
+    <p>Year 4 English Language Learning Game</p>
+    <p>Explore • Discover • Read • Learn</p>
+</header>
+<main>
+    <div class="panel">
+        <h2>🌳 Explore the 3D Farm</h2>
+        <p>Use the on-screen buttons to explore. Click an animal to learn about it!</p>
+        <div id="farm">
+            <canvas id="game"></canvas>
+            <div id="dpad">
+                <div class="dpad-btn" id="btn-up">⬆️</div>
+                <div class="dpad-btn" id="btn-left">⬅️</div>
+                <div class="dpad-btn" id="btn-down">⬇️</div>
+                <div class="dpad-btn" id="btn-right">➡️</div>
+            </div>
+        </div>
+        <p id="animalInfo" style="font-size: 1.1em; margin-top: 15px; color: #2c5282;">Welcome, Farm Explorer! Find an animal to begin.</p>
+        <button onclick="speakAnimal()">🔊 Hear Animal Information</button>
+    </div>
+
+    <div class="panel">
+        <h2>🎯 Choose Your Mission</h2>
+        <input id="player" placeholder="Enter your name" style="padding:10px;border-radius:8px; width: 80%; max-width: 300px;">
+        <br><br>
+        <button onclick="startMission(0)">🐄 Mission 1: Animal Explorer</button>
+        <button onclick="startMission(1)">🔊 Mission 2: Animal Sounds</button>
+        <button onclick="startMission(2)">📖 Mission 3: Reading Detective</button>
+        <button onclick="startMission(3)">✏️ Mission 4: Sentence Builder</button>
+        <button onclick="startMission(4)">🏆 Mission 5: Final Challenge</button>
+        <p id="score">⭐ Score: 0</p>
+        <p style="margin-bottom: 5px; font-weight: bold;">Progress</p>
+        <progress id="progress" value="0" max="5"></progress>
+        <p id="completed">Missions completed: 0/5</p>
+    </div>
+
+    <div class="panel" id="missionPanel">
+        <h2 id="missionTitle">📚 Your Learning Challenge</h2>
+        <div id="question" style="font-size: 1.1em; margin-bottom: 15px;">Choose a mission to start your adventure!</div>
+        <div id="answers" style="display: flex; flex-direction: column; gap: 10px; max-width: 400px; margin: 0 auto;"></div>
+        <div id="feedback"></div>
+        <button id="next" onclick="nextQuestion()" style="display:none; margin-top: 15px; background: #2b6cb0;">Next Question ➡️</button>
+    </div>
+</main>
+
+<script type="module">
+import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js';
+
+// --- THREE.JS SETUP ---
+const canvas = document.getElementById('game');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x91d8ff); // Sky blue
+
+const camera = new THREE.PerspectiveCamera(65, canvas.clientWidth / 400, 0.1, 1000);
+camera.position.set(0, 7, 14);
+
+const renderer = new THREE.WebGLRenderer({canvas, antialias: true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(canvas.clientWidth, 400, false);
+
+// Lighting
+scene.add(new THREE.HemisphereLight(0xffffff, 0x477d38, 1));
+const sunlight = new THREE.DirectionalLight(0xffffff, 1.2);
+sunlight.position.set(-5, 12, 8);
+scene.add(sunlight);
+
+// Ground
+const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(100, 100),
+    new THREE.MeshStandardMaterial({color: 0x83c957})
+);
+ground.rotation.x = -Math.PI / 2;
+scene.add(ground);
+
+// Helper function to create simple boxes
+function box(w, h, d, color, x, y, z) {
+    const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(w, h, d),
+        new THREE.MeshStandardMaterial({color})
+    );
+    mesh.position.set(x, y, z);
+    scene.add(mesh);
+    return mesh;
+}
+
+// Environment: Barn
+box(4, 3, 3, 0xc7473a, 0, 1.5, -9); // Barn body
+const roof = new THREE.Mesh(
+    new THREE.ConeGeometry(3.5, 2, 4),
+    new THREE.MeshStandardMaterial({color: 0x742c25})
+);
+roof.position.set(0, 3.8, -9);
+roof.rotation.y = Math.PI / 4;
+scene.add(roof);
+box(1.2, 1.8, 0.1, 0x69372a, 0, 0.9, -7.45); // Door
+
+// Environment: Dirt Path
+const path = new THREE.Mesh(
+    new THREE.PlaneGeometry(4, 30),
+    new THREE.MeshStandardMaterial({color: 0xd8bd86})
+);
+path.rotation.x = -Math.PI / 2;
+path.position.set(0, 0.02, 0);
+scene.add(path);
+
+// Environment: Trees
+const treePositions = [[-8, -5], [8, -6], [-8, 5], [8, 7], [-6, 12], [7, 12]];
+for(const [x, z] of treePositions){
+    const trunk = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.3, 0.4, 1.5, 8),
+        new THREE.MeshStandardMaterial({color: 0x80552f})
+    );
+    trunk.position.set(x, 0.75, z);
+    scene.add(trunk);
+    
+    const leaves = new THREE.Mesh(
+        new THREE.SphereGeometry(1.5, 12, 12),
+        new THREE.MeshStandardMaterial({color: 0x258a43})
+    );
+    leaves.position.set(x, 2.2, z);
+    scene.add(leaves);
+}
+
+// Environment: Pond
+const pond = new THREE.Mesh(
+    new THREE.CircleGeometry(2.5, 32),
+    new THREE.MeshStandardMaterial({color: 0x37bde8})
+);
+pond.rotation.x = -Math.PI / 2;
+pond.position.set(5, 0.04, 5);
+pond.scale.set(1.4, 1, 1);
+scene.add(pond);
+
+// --- ANIMALS ---
+const animalsData = [
+    {name: "Cow", color: 0xf4f0e5, x: -5, z: -2, sound: "Moo!", baby: "Calf", home: "Cow shed", desc: "A cow has four legs and gives us milk."},
+    {name: "Sheep", color: 0xfaf4e8, x: -2, z: -5, sound: "Baa!", baby: "Lamb", home: "Sheep field", desc: "A sheep has a woolly coat. Its baby is a lamb."},
+    {name: "Pig", color: 0xf2a6b3, x: 2, z: -4, sound: "Oink!", baby: "Piglet", home: "Pig pen", desc: "A pig has a round nose. Its baby is a piglet."},
+    {name: "Horse", color: 0x9b6037, x: 5, z: -1, sound: "Neigh!", baby: "Foal", home: "Stable", desc: "A horse can run fast. Its baby is a foal."},
+    {name: "Hen", color: 0xf5eee0, x: -5, z: 4, sound: "Cluck!", baby: "Chick", home: "Chicken coop", desc: "A hen lays eggs. Its baby is a chick."},
+    {name: "Duck", color: 0xf1d34f, x: 1, z: 5, sound: "Quack!", baby: "Duckling", home: "Pond", desc: "A duck has feathers and can swim."},
+    {name: "Goat", color: 0xd9c9a9, x: 4, z: 3, sound: "Meh!", baby: "Kid", home: "Goat pen", desc: "A goat can climb. Its baby is called a kid."},
+    {name: "Goose", color: 0xfafafa, x: -1, z: 1, sound: "Honk!", baby: "Gosling", home: "Pond", desc: "A goose has a long neck and webbed feet."}
+];
+
+const animalMeshes = [];
+
+animalsData.forEach((a, index) => {
+    const group = new THREE.Group();
+    group.position.set(a.x, 0, a.z);
+    group.userData.animal = a;
+    
+    const material = new THREE.MeshStandardMaterial({color: a.color});
+    
+    // Body
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.7, 16, 12), material);
+    body.scale.set(1.2, 0.8, 1);
+    body.position.y = 0.8;
+    group.add(body);
+    
+    // Head
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.4, 16, 12), material);
+    head.position.set(0, 1.25, 0.65);
+    group.add(head);
+    
+    // Snout/Beak
+    const nose = new THREE.Mesh(
+        new THREE.SphereGeometry(0.2, 12, 8),
+        new THREE.MeshStandardMaterial({color: a.name === "Pig" ? 0xe77f95 : (a.name === "Duck" || a.name === "Goose" || a.name === "Hen" ? 0xffa500 : a.color)})
+    );
+    nose.position.set(0, 1.1, 1);
+    group.add(nose);
+    
+    // Legs
+    for(const x of [-0.4, 0.4]) {
+        const leg = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.1, 0.12, 0.55, 8),
+            material
+        );
+        leg.position.set(x, 0.3, 0.1);
+        group.add(leg);
+    }
+    
+    // Eyes
+    const eyeMaterial = new THREE.MeshStandardMaterial({color: 0x111111});
+    for(const x of [-0.15, 0.15]) {
+        const eye = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), eyeMaterial);
+        eye.position.set(x, 1.35, 0.98);
+        group.add(eye);
+    }
+    
+    scene.add(group);
+    animalMeshes.push(group);
+});
+
+// --- PLAYER ---
+const player = new THREE.Group();
+const playerBody = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.35, 0.35, 1.4, 12),
+    new THREE.MeshStandardMaterial({color: 0x2879d0})
+);
+playerBody.position.y = 0.7;
+player.add(playerBody);
+
+const playerHead = new THREE.Mesh(
+    new THREE.SphereGeometry(0.28, 12, 12),
+    new THREE.MeshStandardMaterial({color: 0xf0c49a})
+);
+playerHead.position.y = 1.35;
+player.add(playerHead);
+
+player.position.set(0, 0, 10);
+scene.add(player);
+
+// --- CONTROLS & INTERACTION ---
+const keys = {};
+window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+
+// --- ON-SCREEN D-PAD LOGIC ---
+const dpadMap = {
+    'btn-up': 'w',
+    'btn-down': 's',
+    'btn-left': 'a',
+    'btn-right': 'd'
+};
+
+document.querySelectorAll('.dpad-btn').forEach(btn => {
+    btn.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        keys[dpadMap[btn.id]] = true;
+    });
+    const release = (e) => {
+        e.preventDefault();
+        keys[dpadMap[btn.id]] = false;
+    };
+    btn.addEventListener('pointerup', release);
+    btn.addEventListener('pointerleave', release);
+    btn.addEventListener('pointercancel', release);
+});
+
+let selectedAnimal = null;
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+
+canvas.addEventListener('click', e => {
+    const r = canvas.getBoundingClientRect();
+    pointer.x = ((e.clientX - r.left) / r.width) * 2 - 1;
+    pointer.y = -((e.clientY - r.top) / r.height) * 2 + 1;
+    
+    raycaster.setFromCamera(pointer, camera);
+    const hits = raycaster.intersectObjects(animalMeshes, true);
+    
+    if(hits.length) {
+        let obj = hits[0].object;
+        while(obj.parent && !obj.userData.animal) obj = obj.parent;
+        
+        if(obj.userData.animal) {
+            selectedAnimal = obj.userData.animal;
+            document.getElementById('animalInfo').innerHTML = 
+                `<span style="font-size: 1.4em; color: #27834c;"><b>${selectedAnimal.name}</b></span><br>
+                ${selectedAnimal.desc}<br>
+                <span style="color: #666;">Sound: <b>${selectedAnimal.sound}</b> | Baby: <b>${selectedAnimal.baby}</b> | Home: <b>${selectedAnimal.home}</b></span>`;
+            
+            // Pop animation on click
+            obj.position.y += 0.5;
+            setTimeout(() => { obj.position.y -= 0.5; }, 150);
+        }
+    }
+});
+
+// Text to Speech
+window.speakAnimal = () => {
+    if(!selectedAnimal) {
+        say("Welcome to the farm! Click an animal to learn about it.");
+        return;
+    }
+    say(selectedAnimal.name + ". " + selectedAnimal.desc + " Its sound is " + selectedAnimal.sound);
+};
+
+function say(text) {
+    if("speechSynthesis" in window) {
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = "en-GB";
+        u.rate = 0.9;
+        speechSynthesis.speak(u);
+    }
+}
+
+// --- ANIMATION LOOP ---
+function animate() {
+    requestAnimationFrame(animate);
+    const speed = 0.15;
+    
+    // Player movement
+    if(keys.w || keys.arrowup) player.position.z -= speed;
+    if(keys.s || keys.arrowdown) player.position.z += speed;
+    if(keys.a || keys.arrowleft) player.position.x -= speed;
+    if(keys.d || keys.arrowright) player.position.x += speed;
+    
+    // Boundaries
+    player.position.x = Math.max(-12, Math.min(12, player.position.x));
+    player.position.z = Math.max(-14, Math.min(14, player.position.z));
+    
+    // Camera follow
+    camera.position.lerp(
+        new THREE.Vector3(player.position.x, player.position.y + 7, player.position.z + 10), 0.08
+    );
+    camera.lookAt(player.position.x, 0, player.position.z - 2);
+    
+    // Idle animations for animals
+    animalMeshes.forEach((a, i) => {
+        a.position.y = Math.sin(Date.now() * 0.002 + i) * 0.05;
+        a.rotation.y = Math.sin(Date.now() * 0.001 + i) * 0.05;
+    });
+    
+    renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', () => {
+    const w = canvas.clientWidth;
+    renderer.setSize(w, 400, false);
+    camera.aspect = w / 400;
+    camera.updateProjectionMatrix();
+});
+
+// --- QUIZ SYSTEM ---
+const missions = [
+    {title: "🐄 Mission 1: Animal Explorer", qs: [
+        ["Which animal gives us milk?", ["Cow", "Duck", "Pig", "Hen"], "Cow"],
+        ["Which animal has a woolly coat?", ["Sheep", "Horse", "Goose", "Pig"], "Sheep"],
+        ["Which animal lays eggs?", ["Hen", "Horse", "Cow", "Goat"], "Hen"],
+        ["Which animal can swim in a pond?", ["Duck", "Sheep", "Horse", "Cow"], "Duck"],
+        ["What is a baby cow called?", ["Calf", "Lamb", "Foal", "Chick"], "Calf"]
+    ]},
+    {title: "🔊 Mission 2: Animal Sounds", qs: [
+        ["Which animal says 'Moo'?", ["Cow", "Sheep", "Duck", "Pig"], "Cow"],
+        ["Which animal says 'Baa'?", ["Sheep", "Horse", "Hen", "Goose"], "Sheep"],
+        ["Which animal says 'Oink'?", ["Pig", "Duck", "Cow", "Goat"], "Pig"],
+        ["Which animal says 'Quack'?", ["Duck", "Horse", "Sheep", "Pig"], "Duck"],
+        ["Which animal says 'Neigh'?", ["Horse", "Hen", "Goose", "Cow"], "Horse"]
+    ]},
+    {title: "📖 Mission 3: Reading Detective", qs: [
+        ["Bella has four legs and gives us milk. Who is Bella?", ["Cow", "Duck", "Pig", "Hen"], "Cow"],
+        ["I have a woolly coat. My baby is a lamb. Who am I?", ["Sheep", "Horse", "Goose", "Pig"], "Sheep"],
+        ["I have feathers and a bill. I swim in a pond. Who am I?", ["Duck", "Cow", "Goat", "Horse"], "Duck"],
+        ["My baby is called a foal. I can run fast. Who am I?", ["Horse", "Hen", "Sheep", "Pig"], "Horse"],
+        ["I lay eggs in the chicken coop. Who am I?", ["Hen", "Cow", "Goose", "Goat"], "Hen"]
+    ]},
+    {title: "✏️ Mission 4: Sentence Builder", qs: [
+        ["Choose the correct sentence.", ["The duck swims in the pond.", "The duck swim pond.", "Duck the swims pond.", "The duck swimming pond."], "The duck swims in the pond."],
+        ["Choose the correct sentence.", ["The hen lays eggs.", "The hen lay eggs.", "The hen laying eggs.", "The hen are eggs."], "The hen lays eggs."],
+        ["Complete: A horse ___ four legs.", ["has", "have", "having", "is"], "has"],
+        ["Complete: The farmer ___ the cows.", ["feeds", "feeded", "feeding", "are feed"], "feeds"],
+        ["Choose the correct sentence.", ["A sheep has wool.", "A sheep have wool.", "A sheep having wool.", "Sheep is wool."], "A sheep has wool."]
+    ]},
+    {title: "🏆 Mission 5: Final Challenge", qs: [
+        ["What is a baby sheep called?", ["Lamb", "Calf", "Foal", "Piglet"], "Lamb"],
+        ["Where can a horse live?", ["Stable", "Pond", "Chicken coop", "Pig pen"], "Stable"],
+        ["Which animal has a baby called a gosling?", ["Goose", "Cow", "Goat", "Hen"], "Goose"],
+        ["Read: The duck swims in the pond. Where does it swim?", ["In the pond", "In the stable", "In the barn", "In a tree"], "In the pond"],
+        ["Which sentence is correct?", ["The farmer feeds the cows.", "The farmer feed cows.", "The farmer feeding cows.", "The farmer are feed cows."], "The farmer feeds the cows."]
+    ]}
+];
+
+let currentMission = 0, index = 0, score = 0;
+let done = new Set(), answered = false;
+
+window.startMission = (n) => {
+    currentMission = n; 
+    index = 0;
+    document.getElementById('missionTitle').textContent = missions[n].title;
+    document.getElementById('feedback').textContent = "";
+    document.getElementById('missionPanel').scrollIntoView({ behavior: 'smooth' });
+    showQuestion();
+};
+
+function showQuestion() {
+    answered = false;
+    const item = missions[currentMission].qs[index];
+    document.getElementById('question').innerHTML = 
+        `<span style="color: #666; font-size: 0.9em; text-transform: uppercase; font-weight: bold;">Question ${index + 1} of ${missions[currentMission].qs.length}</span>
+         <p style="font-size: 1.2em; font-weight: bold; margin-top: 10px;">${item[0]}</p>`;
+    
+    const area = document.getElementById('answers');
+    area.innerHTML = "";
+    item[1].forEach(answer => {
+        const b = document.createElement('button');
+        b.textContent = answer;
+        b.onclick = () => checkAnswer(answer);
+        area.appendChild(b);
+    });
+    document.getElementById('next').style.display = "none";
+}
+
+function checkAnswer(answer) {
+    if(answered) return;
+    answered = true;
+    
+    const correct = missions[currentMission].qs[index][2];
+    const isCorrect = (answer === correct);
+    
+    if(isCorrect) {
+        score += 10;
+        document.getElementById('feedback').innerHTML = "<span style='color: #15803d; font-size: 1.1em;'>🌟 Correct! Well done! +10 points.</span>";
+        // Play success sound logic can go here
+    } else {
+        document.getElementById('feedback').innerHTML = `<span style='color: #b91c1c; font-size: 1.1em;'>💡 Try to remember: the correct answer is <b>${correct}</b>.</span>`;
+    }
+    
+    document.getElementById('score').textContent = "⭐ Score: " + score;
+    
+    document.querySelectorAll('#answers button').forEach(b => {
+        b.disabled = true;
+        b.style.cursor = 'default';
+        if(b.textContent === correct) {
+            b.style.background = "#4ade80";
+            b.style.color = "#064e3b";
+            b.style.borderColor = "#22c55e";
+        } else if(b.textContent === answer) {
+            b.style.background = "#fca5a5";
+            b.style.color = "#7f1d1d";
+            b.style.borderColor = "#ef4444";
+        }
+    });
+    
+    document.getElementById('next').style.display = "inline-block";
+}
+
+window.nextQuestion = () => {
+    index++;
+    if(index >= missions[currentMission].qs.length) {
+        done.add(currentMission);
+        const playerName = document.getElementById('player').value || 'Farm Explorer';
+        document.getElementById('question').innerHTML = 
+            `<h3 style="color: #27834c; font-size: 1.5em;">🎉 Mission completed, ${playerName}!</h3>
+             <p>You have earned a mission badge. Choose another mission to continue.</p>`;
+        document.getElementById('answers').innerHTML = "";
+        document.getElementById('feedback').textContent = "Keep learning and exploring!";
+        document.getElementById('next').style.display = "none";
+        
+        document.getElementById('progress').value = done.size;
+        document.getElementById('completed').textContent = "Missions completed: " + done.size + "/5";
+        
+        if(done.size === 5) {
+            document.getElementById('question').innerHTML += 
+                `<div style="background: #fef08a; padding: 20px; border-radius: 12px; margin-top: 20px; border: 2px dashed #ca8a04;">
+                    <h2 style="color: #854d0e; margin-top: 0;">🏆 Farm Animal Expert!</h2>
+                    <p style="color: #a16207; font-weight: bold; font-size: 1.2em;">Congratulations, ${playerName}!</p>
+                    <p>You completed all five missions with a score of ${score}!</p>
+                </div>`;
+        }
+    } else {
+        document.getElementById('feedback').textContent = "";
+        showQuestion();
+    }
+};
+</script>
+</body>
+</html>
